@@ -28,6 +28,9 @@ from cloudant._2to3 import unicode_
 from .unit_t_db_base import UnitTestDbBase
 from .. import BYTETYPE
 
+@unittest.skipIf(not os.environ.get('RUN_CLOUDANT_TESTS') or
+                 os.environ.get('COUCHDB_VERSION') == '1.6.1',
+    'Skipping Cloudant\CouchDB 2.1.1 _db_updates feed tests')
 class DbUpdatesTestsBase(UnitTestDbBase):
     """
     Common _db_updates tests methods
@@ -90,8 +93,10 @@ class DbUpdatesTestsBase(UnitTestDbBase):
             self.assertTrue(doc['db_name'] in self.dbs)
             self.assertTrue(doc['type'] in types)
 
-@unittest.skipIf(os.environ.get('RUN_CLOUDANT_TESTS'),
-    'Skipping CouchDB _db_updates feed tests')
+@unittest.skipIf(os.environ.get('RUN_CLOUDANT_TESTS')
+                 and (os.environ.get('COUCHDB_VERSION') == '2.1.1' or
+                      os.environ.get('COUCHDB_VERSION') is None),
+    'Skipping CouchDB 2.1.1 _db_updates feed tests')
 class CouchDbUpdatesTests(DbUpdatesTestsBase):
     """
     CouchDB _db_updates feed unit tests

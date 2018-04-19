@@ -102,20 +102,30 @@ class UnitTestDbBase(unittest.TestCase):
 
             if os.environ.get('DB_USER') is None:
                 # Get couchdb docker node name
-                os.environ['NODENAME'] = requests.get(
-                    '{0}/_membership'.format(os.environ['DB_URL'])).json()['all_nodes'][0]
+                if os.environ.get('COUCHDB_VERSION') == '2.1.1':
+                    os.environ['NODENAME'] = requests.get(
+                        '{0}/_membership'.format(os.environ['DB_URL'])).json()['all_nodes'][0]
                 os.environ['DB_USER_CREATED'] = '1'
                 os.environ['DB_USER'] = 'user-{0}'.format(
                     unicode_(uuid.uuid4())
                     )
                 os.environ['DB_PASSWORD'] = 'password'
-                resp = requests.put(
-                    '{0}/_node/{1}/_config/admins/{2}'.format(
-                        os.environ['DB_URL'],
-                        os.environ['NODENAME'],
-                        os.environ['DB_USER']
+                if os.environ.get('COUCHDB_VERSION') == '2.1.1':
+                    resp = requests.put(
+                        '{0}/_node/{1}/_config/admins/{2}'.format(
+                            os.environ['DB_URL'],
+                            os.environ['NODENAME'],
+                            os.environ['DB_USER']
+                            ),
+                        data='"{0}"'.format(os.environ['DB_PASSWORD'])
+                        )
+                else:
+                    resp = requests.put(
+                        '{0}/_config/admins/{1}'.format(
+                            os.environ['DB_URL'],
+                            os.environ['DB_USER']
                         ),
-                    data='"{0}"'.format(os.environ['DB_PASSWORD'])
+                        data='"{0}"'.format(os.environ['DB_PASSWORD'])
                     )
                 resp.raise_for_status()
 
@@ -126,14 +136,25 @@ class UnitTestDbBase(unittest.TestCase):
         """
         if (os.environ.get('RUN_CLOUDANT_TESTS') is None and
             os.environ.get('DB_USER_CREATED') is not None):
-            resp = requests.delete(
-                '{0}://{1}:{2}@{3}/_node/{4}/_config/admins/{5}'.format(
-                    os.environ['DB_URL'].split('://', 1)[0],
-                    os.environ['DB_USER'],
-                    os.environ['DB_PASSWORD'],
-                    os.environ['DB_URL'].split('://', 1)[1],
-                    os.environ['NODENAME'],
-                    os.environ['DB_USER']
+            if os.environ.get('COUCHDB_VERSION') == '2.1.1':
+                resp = requests.delete(
+                    '{0}://{1}:{2}@{3}/_node/{4}/_config/admins/{5}'.format(
+                        os.environ['DB_URL'].split('://', 1)[0],
+                        os.environ['DB_USER'],
+                        os.environ['DB_PASSWORD'],
+                        os.environ['DB_URL'].split('://', 1)[1],
+                        os.environ['NODENAME'],
+                        os.environ['DB_USER']
+                        )
+                    )
+            else:
+                resp = requests.delete(
+                    '{0}://{1}:{2}@{3}/_config/admins/{4}'.format(
+                        os.environ['DB_URL'].split('://', 1)[0],
+                        os.environ['DB_USER'],
+                        os.environ['DB_PASSWORD'],
+                        os.environ['DB_URL'].split('://', 1)[1],
+                        os.environ['DB_USER']
                     )
                 )
             del os.environ['DB_USER_CREATED']
