@@ -93,10 +93,23 @@ class CouchDB(dict):
         self._auto_renew = kwargs.get('auto_renew', False)
         self._use_basic_auth = kwargs.get('use_basic_auth', False)
         self._use_iam = kwargs.get('use_iam', False)
+        self._features = None
 
         connect_to_couch = kwargs.get('connect', False)
         if connect_to_couch and self._DATABASE_CLASS == CouchDatabase:
             self.connect()
+
+    def features(self):
+        """
+        lazy fetch and cache features
+        """
+        if self._features is None:
+            metadata = self.metadata()
+            if "features" in metadata:
+                self._features = metadata["features"]
+            else:
+                self._features = []
+        return self._features
 
     def connect(self):
         """
@@ -297,6 +310,16 @@ class CouchDB(dict):
             feed.
         """
         return Feed(self, raw_data, **kwargs)
+
+    def metadata(self):
+        """
+        Retrieves the remote server metadata dictionary.
+
+        :returns: Dictionary containing server metadata details
+        """
+        resp = self.r_session.get(self.server_url)
+        resp.raise_for_status()
+        return resp.json()
 
     def keys(self, remote=False):
         """
